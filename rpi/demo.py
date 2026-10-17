@@ -67,25 +67,42 @@ async def run_demo(args: argparse.Namespace) -> None:
         print("Subscribed to XYZ and Motion notifications.")
 
         if args.sequence:
-            for hz, duration in ((10, args.fast_seconds), (2, args.slow_seconds)):
+            for hz, duration in ((5, args.fast_seconds), (2, args.slow_seconds)):
                 await set_frequency(client, hz)
                 print(f"\n=== DEMO: {hz} Hz for {duration:g} seconds ===")
                 await asyncio.sleep(duration)
             print("\n=== DEMO: Significant Motion ===")
             print(f"Move the STM32 board for {args.motion_seconds:g} seconds.")
             await asyncio.sleep(args.motion_seconds)
+        elif args.frequency is None:
+            await set_frequency(client, 5)
+            print(f"\n=== DEMO: 5 Hz for {args.fast_seconds:g} seconds ===")
+            await asyncio.sleep(args.fast_seconds)
+            await set_frequency(client, 2)
+            print("\n=== DEMO: 2 Hz continuous read ===")
+            print("Press Ctrl+C to stop; move the board and watch XYZ values change.")
+            while True:
+                await asyncio.sleep(1)
         else:
             await set_frequency(client, args.frequency)
-            print("Press Ctrl+C to stop; move the board and watch XYZ values change.")
+            print("Press Ctrl+C to stop the fixed-frequency read.")
             while True:
                 await asyncio.sleep(1)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--frequency", type=int, default=10, help="sampling rate, 1..100 Hz")
+    parser.add_argument(
+        "--frequency",
+        type=int,
+        help="stream at a fixed rate instead of the default 5 Hz-to-2 Hz demo",
+    )
     parser.add_argument("--scan-timeout", type=float, default=20.0)
-    parser.add_argument("--sequence", action="store_true", help="run the 10 Hz / 2 Hz / motion demo")
+    parser.add_argument(
+        "--sequence",
+        action="store_true",
+        help="run the timed 5 Hz / 2 Hz / significant-motion demo",
+    )
     parser.add_argument("--fast-seconds", type=float, default=15.0)
     parser.add_argument("--slow-seconds", type=float, default=15.0)
     parser.add_argument("--motion-seconds", type=float, default=30.0)

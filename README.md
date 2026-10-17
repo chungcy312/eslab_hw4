@@ -12,6 +12,8 @@ BLE central demo for the B-L475E-IOT01A board.
   and writes the requested sampling frequency.
 - `setup.sh`: one setup entry point for the host toolchain/SDK and the Pi BLE
   Python environment.
+- `rpi/init_bluetooth.sh`: starts and enables BlueZ, unblocks Bluetooth, and
+  powers on the Pi adapter; safe to rerun after boot if needed.
 
 The STM32 firmware is based on ST's STM32CubeL4 v1.18.2 B-L475E-IOT01A
 HeartRate example. The SDK is fetched from the official ST repository during
@@ -29,8 +31,8 @@ This creates the local Python environment, fetches STM32CubeL4 v1.18.2 if it is
 not already present, and builds the firmware. The script uses an installed
 STM32CubeIDE ARM toolchain or Homebrew's `arm-none-eabi-gcc`.
 
-On Raspberry Pi OS, run `./setup.sh rpi` to install BlueZ/Python requirements
-and create `rpi/.venv`. The firmware cross-build can also be prepared on Linux
+On Raspberry Pi OS, run `./setup.sh rpi` to install BlueZ/Python requirements,
+create `rpi/.venv`, and initialize Bluetooth. The firmware cross-build can also be prepared on Linux
 with `./setup.sh stm32` (it installs the ARM cross-compiler through apt).
 
 Build modes:
@@ -39,7 +41,14 @@ Build modes:
 ./setup.sh rpi       # BLE Python runtime and OS packages on Raspberry Pi OS
 ./setup.sh stm32     # STM32 toolchain, SDK, and firmware build
 ./setup.sh all       # both environments and the firmware build
+./rpi/init_bluetooth.sh  # reinitialize Bluetooth after boot if it is unavailable
 ```
+
+The Bluetooth initializer enables `bluetooth.service` at boot, removes a
+Bluetooth rfkill block when `rfkill` is installed, and powers on the default
+adapter. It requires a Bluetooth adapter and `sudo` privileges. Running
+`./setup.sh all` on macOS skips this Pi-only step and prints the command to run
+on the Pi.
 
 The firmware artifacts are written to `stm32/build/eslab_hw4.elf` and
 `stm32/build/eslab_hw4.bin`. To use an SDK already installed elsewhere:
@@ -53,12 +62,19 @@ make -C stm32 SDK_ROOT=/path/to/STM32Cube_FW_L4_V1.18.2
 Connect and power the STM32 board, then run:
 
 ```sh
+./rpi/.venv/bin/python rpi/demo.py
+```
+
+By default, the demo subscribes to notifications, reads at 5 Hz for 15 seconds,
+then switches to 2 Hz and continues until interrupted. To run the timed motion
+demonstration instead (5 Hz for 15 seconds, 2 Hz for 15 seconds, then wait 30
+seconds for significant motion):
+
+```sh
 ./rpi/.venv/bin/python rpi/demo.py --sequence
 ```
 
-The sequence subscribes to notifications, sets 10 Hz for 15 seconds, then
-2 Hz for 15 seconds, and waits 30 seconds for significant motion. To stream at
-one chosen rate until interrupted:
+To stream at one chosen rate until interrupted:
 
 ```sh
 ./rpi/.venv/bin/python rpi/demo.py --frequency 10

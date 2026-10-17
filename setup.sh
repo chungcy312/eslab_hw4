@@ -10,7 +10,7 @@ usage() {
   printf 'Usage: %s [all|stm32|rpi]\n' "$0"
   printf '  all    Prepare the local BLE Python environment and build STM32 firmware (default)\n'
   printf '  stm32  Install/find the ARM toolchain, fetch STM32CubeL4, and build firmware\n'
-  printf '  rpi    Install Raspberry Pi BLE runtime requirements and create the Python venv\n'
+  printf '  rpi    Install Raspberry Pi BLE requirements, create the venv, and initialize Bluetooth\n'
 }
 
 find_cubeide_toolchain() {
@@ -66,7 +66,7 @@ prepare_rpi() {
   python3 -m venv "$ROOT_DIR/rpi/.venv"
   "$ROOT_DIR/rpi/.venv/bin/python" -m pip install --upgrade pip
   "$ROOT_DIR/rpi/.venv/bin/python" -m pip install -r "$ROOT_DIR/rpi/requirements.txt"
-  printf '\nRPi BLE environment ready. Run:\n  %s/rpi/.venv/bin/python %s/rpi/demo.py --sequence\n' \
+  printf '\nRPi BLE environment ready. Run:\n  %s/rpi/.venv/bin/python %s/rpi/demo.py\n' \
     "$ROOT_DIR" "$ROOT_DIR"
 }
 
@@ -81,3 +81,12 @@ case "$MODE" in
   -h|--help|help) usage ;;
   *) usage >&2; exit 2 ;;
 esac
+
+# On a Pi, finish setup by unblocking/powering the adapter and enabling BlueZ
+# for future boots. Host-side (e.g. macOS) setup has no Pi Bluetooth to start.
+if [[ "$MODE" != "stm32" && "$(uname -s)" == "Linux" ]]; then
+  "$ROOT_DIR/rpi/init_bluetooth.sh"
+elif [[ "$MODE" != "stm32" ]]; then
+  printf '\nNot running on Linux; skipped Raspberry Pi Bluetooth initialization.\n'
+  printf 'On the Pi, run: %s/rpi/init_bluetooth.sh\n' "$ROOT_DIR"
+fi
