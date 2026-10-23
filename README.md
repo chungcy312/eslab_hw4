@@ -104,3 +104,14 @@ has debugger counters for sample count, queue delivery, CCCD state, ACI notify
 status, frequency writes, and motion interrupts. A successful compile does not
 itself confirm behavior on physical hardware, so verify the notification flow
 on the board after flashing.
+
+## Option 1
+1. Use the STM32 server from the Basic Problem.
+2. Download the stm32_client folder.
+3. Open STM32CubeIDE and import the stm32_client project.
+4. Build and run the project on another STM32 board.
+5. To monitor the BLE connection and accelerometer data, open PuTTY and configure:
+   1. Connection type: Serial
+   2. Serial port: COM port of your STM32 board (e.g., COM3)
+   3. Baud rate: 115200
+
